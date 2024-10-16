@@ -88,6 +88,8 @@ parser.add_argument("--target_base_url", default=None, help="Base URL of target 
 parser.add_argument("--context_model", default=None, help="Name of context model.")
 parser.add_argument("--judge", default="gpt", help="Judge type", choices=["gpt", "llama"])
 parser.add_argument("--store_failed_attempts", action="store_true", help="Store failed attempts.")
+parser.add_argument("--clean_conversation", action="store_true", help="Clean malicious conversation")
+
 
 args = parser.parse_args()
 
@@ -143,8 +145,9 @@ for i_request, request in enumerate(requests[:args.n_requests]):
             messages,history= target_llm.history_generate(request_reformulated, max_n_tokens=args.target_max_n_tokens, temperature=1.0 ,max_attempts=args.max_attempts)
 
         # print(f">>> History generated: {history}")
-        new_request = request_reformulated.split("Paragraph 1:")[0]
-        messages[1]= {"role": "user", "content": new_request}
+        if args.clean_conversation:
+            new_request = request_reformulated.split("Paragraph 1:")[0]
+            messages[1]= {"role": "user", "content": new_request}
         response = target_llm.rewrite_response(messages, request, max_n_tokens=args.target_max_n_tokens, temperature=1.0, rewrite_iteration=1, max_attempts=args.max_attempts, attack_method=args.attack_method)
         
         if args.judge == "gpt":
